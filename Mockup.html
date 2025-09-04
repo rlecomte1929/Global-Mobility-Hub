@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global Mobility Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide-react@0.294.0/dist/umd/lucide-react.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            margin: 0; /* Reset default margin */
+        }
+
+        .sidebar {
+            width: 280px;
+            background-color: #1f2937; /* Darker sidebar */
+            color: #e5e7eb;
+            transition: width 0.3s ease-in-out;
+        }
+
+        .sidebar-collapsed {
+            width: 80px;
+        }
+
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: #d1d5db;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link-active {
+            background-color: #374151; /* Slightly lighter on hover/active */
+            color: #ffffff;
+        }
+
+        .sidebar-link svg {
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+
+        .sidebar-link .link-text {
+            opacity: 1;
+            transition: opacity 0.3s ease-in-out;
+        }
+
+        .sidebar-collapsed .sidebar-link .link-text {
+            opacity: 0;
+            width: 0;
+        }
+        
+        .sidebar-collapsed .sidebar-link svg {
+            margin-right: 0; /* Center icon when collapsed */
+        }
+        .sidebar-collapsed .sidebar-link {
+            justify-content: center;
+        }
+
+        .header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .card {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .main-content {
+            transition: margin-left 0.3s ease-in-out;
+            margin-left: 280px; /* Default sidebar width */
+            width: calc(100% - 280px); /* Adjust width based on sidebar */
+        }
+
+        .main-content-collapsed {
+            margin-left: 80px; /* Collapsed sidebar width */
+            width: calc(100% - 80px); /* Adjust width based on collapsed sidebar */
+        }
+        
+        /* New Visa Application Styles */
+        #map-container {
+            position: relative;
+            width: 100%;
+            height: 400px;
+            background-color: #a5d8f3;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        #map-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.7;
+        }
+        #map-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .travel-path {
+            stroke-dasharray: 8, 8;
+            animation: dash 1s linear infinite;
+        }
+        @keyframes dash {
+            to {
+                stroke-dashoffset: -16;
+            }
+        }
+        .map-marker {
+            transition: all 0.5s ease-in-out;
+        }
+
+        .flowchart-step {
+            display: flex;
+            align-items: center;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+        }
+        .flowchart-step.active {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .flowchart-step-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+        }
+        .passport-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            background-color: #f9fafb;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        .passport-upload-area:hover {
+            background-color: #f3f4f6;
+        }
+        .passport-upload-area.dragging {
+            background-color: #eff6ff;
+            border-color: #3b82f6;
+        }
+
+        /* Chatbot styles */
+        .chatbot-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-height: 500px;
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
+            transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+            transform: translateY(100%); /* Start off-screen */
+            opacity: 0;
+        }
+
+        .chatbot-container.open {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .chatbot-header {
+            background-color: #1e40af; /* Primary blue */
+            color: white;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+        }
+
+        .chatbot-body {
+            flex-grow: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background-color: #f9fafb; /* Light background for chat body */
+        }
+
+        .chat-message {
+            padding: 10px 14px;
+            border-radius: 10px;
+            max-width: 80%;
+            word-wrap: break-word;
+            line-height: 1.4;
+        }
+
+        .user-message {
+            background-color: #dbeafe; /* Light blue for user */
+            color: #1e3a8a; /* Darker blue text for contrast */
+            align-self: flex-end;
+            border-bottom-right-radius: 0;
+        }
+
+        .bot-message {
+            background-color: #e5e7eb; /* Light gray for bot */
+            color: #1f2937; /* Dark gray text */
+            align-self: flex-start;
+            border-bottom-left-radius: 0;
+        }
+        .bot-message.typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            margin: 0 2px;
+            background-color: #4b5563; /* Darker dots for visibility */
+            border-radius: 50%;
+            animation: typing 1s infinite;
+        }
+        .bot-message.typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .bot-message.typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-3px); }
+        }
+
+
+        .chatbot-footer {
+            padding: 12px;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 8px;
+            background-color: #fff; /* White footer background */
+        }
+
+        .chatbot-footer input {
+            flex-grow: 1;
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            outline: none;
+            font-size: 0.9rem;
+        }
+        .chatbot-footer input:focus {
+            border-color: #2563eb; /* Tailwind's blue-600 */
+            box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+        }
+
+
+        .chatbot-footer button {
+            background-color: #2563eb; /* Tailwind's blue-600 */
+            color: white;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .chatbot-footer button:hover {
+            background-color: #1d4ed8; /* Tailwind's blue-700 */
+        }
+        .chatbot-footer button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .chatbot-toggle-button {
+            position: fixed;
+            bottom: 32px;
+            right: 32px;
+            z-index: 1000;
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+            color: #fff;
+            border-radius: 50%;
+            width: 64px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 24px rgba(59,130,246,0.15);
+            cursor: pointer;
+            font-size: 2rem;
+            transition: background 0.2s, box-shadow 0.2s;
+        }
+        .chatbot-toggle-button:hover {
+            background: linear-gradient(90deg, #2563eb 0%, #0ea5e9 100%);
+            box-shadow: 0 8px 32px rgba(59,130,246,0.25);
+        }
+        .chatbot-container {
+            position: fixed;
+            bottom: 112px;
+            right: 32px;
+            width: 350px;
+            max-width: 95vw;
+            background: #fff;
+            border-radius: 1.25rem;
+            box-shadow: 0 8px 32px rgba(59,130,246,0.18);
+            z-index: 1001;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+        .chatbot-container.open {
+            display: flex;
+        }
+        .chatbot-header {
+            background: linear-gradient(90deg, #3b82f6 0%, #06b6d4 100%);
+            color: #fff;
+            padding: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .chatbot-body {
+            flex: 1;
+            padding: 1rem;
+            background: #f9fafb;
+            overflow-y: auto;
+            max-height: 300px;
+        }
+        .chatbot-footer {
+            padding: 0.75rem 1rem;
+            background: #f3f4f6;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 0.5rem;
+        }
+        .chatbot-footer input {
+            flex: 1;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+        }
+        .chatbot-footer button {
+            background: #3b82f6;
+            color: #fff;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .chatbot-footer button:hover {
+            background: #2563eb;
+        }
+        .chat-message {
+            margin-bottom: 0.75rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.75rem;
+            max-width: 80%;
+            word-break: break-word;
+            font-size: 0.98rem;
+        }
+        .bot-message {
+            background: #e0f2fe;
+            color: #0369a1;
+            align-self: flex-start;
+        }
+        .user-message {
+            background: #dbeafe;
+            color: #1e40af;
+            align-self: flex-end;
+        }
+        .typing-indicator {
+            display: flex;
+            gap: 0.2rem;
+            align-items: center;
+        }
+        .typing-indicator span {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            background: #3b82f6;
+            border-radius: 50%;
+            animation: typing-bounce 1s infinite alternate;
+        }
+        .typing-indicator span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+        .typing-indicator span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+        @keyframes typing-bounce {
+            to {
+                opacity: 0.3;
+                transform: translateY(-6px);
+            }
+        }
+    </style>
+</head>
+
+<body class="flex antialiased">
+
+    <aside id="sidebar" class="sidebar h-screen p-4 flex flex-col fixed top-0 left-0 z-[60]">
+        <div class="flex items-center mb-8 shrink-0">
+             <svg id="logoIcon" xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe-2 text-blue-400"><path d="M21.54 15H17a2 2 0 0 0-2 2v4.54"/><path d="M7 3.34V5a3 3 0 0 0 3 3v0a2 2 0 0 1 2 2v0c0 1.1.9 2 2 2v0a2 2 0 0 0 2-2v0c0-1.1.9-2 2-2h3.17"/><path d="M11 21.95V18a2 2 0 0 0-2-2v0a2 2 0 0 1-2-2v-1a2 2 0 0 0-2-2H2.05"/><circle cx="12" cy="12" r="10"/></svg>
+            <span class="link-text text-2xl font-semibold ml-3 text-gray-100">Mobility<span class="text-blue-400">Hub</span></span>
+        </div>
+        <nav class="flex-grow space-y-2">
+            <a href="#" class="sidebar-link" data-section="welcome"><span class="link-text">Welcome</span></a>
+            <a href="#" class="sidebar-link" data-section="register"><span class="link-text">Register</span></a>
+            <a href="#" class="sidebar-link" data-section="login"><span class="link-text">Login</span></a>
+            <a href="#" class="sidebar-link sidebar-link-active" data-section="dashboard"><span class="link-text">Dashboard</span></a>
+            <a href="#" class="sidebar-link" data-section="my-assignments"><span class="link-text">My Assignments</span></a>
+            <a href="#" class="sidebar-link" data-section="visa-application"><span class="link-text">Application</span></a>
+            <a href="#" class="sidebar-link" data-section="services"><span class="link-text">Services</span></a>
+            <a href="#" class="sidebar-link" data-section="resources"><span class="link-text">Resources</span></a>
+            <a href="#" class="sidebar-link flex items-center mb-2" data-section="hr-dashboard" id="hrDashboardLink"><span class="link-text">HR Dashboard</span></a>
+            <a href="#" class="sidebar-link flex items-center mb-2" data-section="gov-dashboard" id="govDashboardLink"><span class="link-text">Government Dashboard</span></a>
+            <a href="#" class="sidebar-link" data-section="reports"><span class="link-text">Reports</span></a>
+        </nav>
+        <div class="mt-auto">
+            <button id="sidebarToggle" class="sidebar-link w-full !justify-start" title="Collapse sidebar">
+                <span class="link-text">Collapse</span>
+            </button>
+        </div>
+    </aside>
+
+    <div id="mainContent" class="main-content flex-1">
+        <header class="header p-4 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+            <h1 class="text-2xl font-semibold text-gray-800 current-section-title">Dashboard</h1>
+            <div class="flex items-center space-x-4">
+                <button class="text-gray-500 hover:text-gray-700 relative" title="Notifications">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bell"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+                    <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white"></span>
+                </button>
+                <div class="relative">
+                    <img src="https://placehold.co/40x40/E2E8F0/4A5568?text=JD" alt="User Avatar" class="w-10 h-10 rounded-full cursor-pointer" title="John Doe" onerror="this.onerror=null;this.src='https://placehold.co/40x40/cccccc/ffffff?text=U';">
+                </div>
+            </div>
+        </header>
+
+        <main class="p-6 space-y-6 bg-gray-50 min-h-[calc(100vh-65px)]">
+            <!-- Dashboard Content (moved from #dashboard) -->
+            <section id="dashboard-content" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Active Assignments</p>
+                                <p class="text-3xl font-semibold text-gray-800">12</p>
+                            </div>
+                            <div class="p-3 bg-blue-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-plane text-blue-600"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Pending Tasks</p>
+                                <p class="text-3xl font-semibold text-gray-800">5</p>
+                            </div>
+                            <div class="p-3 bg-yellow-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-clipboard-list text-yellow-600"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Compliance Alerts</p>
+                                <p class="text-3xl font-semibold text-red-600">2</p>
+                            </div>
+                            <div class="p-3 bg-red-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-alert-triangle text-red-600"><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Budget Utilized</p>
+                                <p class="text-3xl font-semibold text-gray-800">67%</p>
+                            </div>
+                            <div class="p-3 bg-green-100 rounded-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-dollar-sign text-green-600"><line x1="12" x2="12" y1="2" y2="22"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card p-6">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">Recent Activity</h2>
+                    <ul class="space-y-3">
+                        <li class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-150">
+                            <div>
+                                <p class="font-medium text-gray-700">Visa application submitted for John Doe (Singapore)</p>
+                                <p class="text-sm text-gray-500">2 hours ago by <span class="font-medium">Admin</span></p>
+                            </div>
+                            <span class="text-sm text-green-600 font-semibold px-2 py-1 bg-green-100 rounded-full">Completed</span>
+                        </li>
+                        <li class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-150">
+                            <div>
+                                <p class="font-medium text-gray-700">Housing search initiated for Alice Smith (London)</p>
+                                <p class="text-sm text-gray-500">1 day ago by <span class="font-medium">Relo Specialist</span></p>
+                            </div>
+                            <span class="text-sm text-yellow-600 font-semibold px-2 py-1 bg-yellow-100 rounded-full">In Progress</span>
+                        </li>
+                        <li class="flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors duration-150">
+                            <div>
+                                <p class="font-medium text-gray-700">Tax consultation scheduled for Bob Johnson (New York)</p>
+                                <p class="text-sm text-gray-500">3 days ago by <span class="font-medium">HR</span></p>
+                            </div>
+                            <span class="text-sm text-blue-600 font-semibold px-2 py-1 bg-blue-100 rounded-full">Scheduled</span>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- My Assignments Content (moved from #my-assignments) -->
+            <section id="my-assignments-content" class="hidden space-y-6">
+                <div class="card p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-2xl font-bold text-blue-800">My Assignments</h2>
+                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">New Assignment</button>
+                    </div>
+                    <div class="overflow-x-auto rounded-lg border border-gray-200">
+                        <table class="min-w-full text-sm text-left">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2">Employee</th>
+                                    <th class="px-4 py-2">Destination</th>
+                                    <th class="px-4 py-2">Start Date</th>
+                                    <th class="px-4 py-2">Status</th>
+                                    <th class="px-4 py-2">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="bg-white">
+                                    <td class="px-4 py-2 font-semibold">Jane Miller</td>
+                                    <td class="px-4 py-2">Paris</td>
+                                    <td class="px-4 py-2">2025-08-01</td>
+                                    <td class="px-4 py-2"><span class="bg-green-100 text-green-800 px-2 py-1 rounded">Active</span></td>
+                                    <td class="px-4 py-2"><a href="#" class="text-blue-600 hover:underline">View</a></td>
+                                </tr>
+                                <tr class="bg-gray-50">
+                                    <td class="px-4 py-2 font-semibold">Liam Smith</td>
+                                    <td class="px-4 py-2">Tokyo</td>
+                                    <td class="px-4 py-2">2025-09-15</td>
+                                    <td class="px-4 py-2"><span class="bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Pending</span></td>
+                                    <td class="px-4 py-2"><a href="#" class="text-blue-600 hover:underline">View</a>
+                                    </td>
+                                </tr>
+                                <tr class="bg-white">
+                                    <td class="px-4 py-2 font-semibold">Alice Smith</td>
+                                    <td class="px-4 py-2">London</td>
+                                    <td class="px-4 py-2">2025-07-10</td>
+                                    <td class="px-4 py-2"><span class="bg-red-100 text-red-800 px-2 py-1 rounded">Delayed</span></td>
+                                    <td class="px-4 py-2"><a href="#" class="text-blue-600 hover:underline">View</a></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Commented out original dashboard and my-assignments sections to avoid duplicate content -->
+            <!--
+            <section id="dashboard" class="space-y-6">
+                ...existing code...
+            </section>
+            <section id="my-assignments" class="hidden space-y-6">
+                ...existing code...
+            </section>
+            -->
+
+            <!-- VISA APPLICATION SECTION (original, pre-Gov Dashboard) -->
+            <section id="visa-application" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">Visa Application</h2>
+                    <form id="visa-form" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Full Name</label>
+                                <input type="text" name="fullName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" value="">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nationality</label>
+                                <input type="text" name="nationality" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" value="">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Passport Number</label>
+                                <input type="text" name="passportNumber" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" value="">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
+                                <input type="date" name="dob" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" value="1988-10-20">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Origin Country</label>
+                                <select id="origin-country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    <option>Germany</option>
+                                    <option>France</option>
+                                    <option>United Kingdom</option>
+                                    <option>United States</option>
+                                    <option>Japan</option>
+                                    <option>Singapore</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Destination Country</label>
+                                <select id="destination-country" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    <option>Norway</option>
+                                    <option>Germany</option>
+                                    <option>France</option>
+                                    <option>United Kingdom</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700">Upload Passport</label>
+                            <input type="file" accept="image/*,application/pdf" class="mt-1" id="passport-upload" />
+                            <button type="button" id="extract-passport-btn" class="ml-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Extract from Passport</button>
+                            <span id="passport-extract-status" class="ml-4 text-sm text-gray-600"></span>
+                        </div>
+                        <button id="next-step-btn" type="button" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Next Step</button>
+                    </form>
+                </div>
+                <div class="card p-6 hidden" id="required-docs-section">
+                    <h3 class="text-xl font-semibold text-blue-700 mb-2">Required Documents</h3>
+                    <div id="docs-description" class="mb-2 text-gray-600"></div>
+                    <ul id="docs-list" class="space-y-2"></ul>
+                </div>
+                <div class="card p-6">
+                    <h3 class="text-xl font-semibold text-blue-700 mb-2">Travel Map</h3>
+                    <svg viewBox="0 0 1000 400" class="w-full h-48 bg-gray-100 rounded-lg border" style="min-width:300px;">
+                        <image href="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1200px-World_map_-_low_resolution.svg.png" x="0" y="0" height="400" width="1000"/>
+                        <g id="map-overlay"></g>
+                    </svg>
+                </div>
+            </section>
+
+            <!-- APPLICATION SECTION -->
+            <section id="visa-application" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">Application Journey Map</h2>
+                    <div class="w-full flex flex-col items-center">
+                        <!-- World Map SVG with journey dots and labels -->
+                        <div style="max-width: 700px; width: 100%;">
+                            <svg viewBox="0 0 900 450" style="width:100%;height:auto;" xmlns="http://www.w3.org/2000/svg">
+                                <!-- World map background (simplified, for demo) -->
+                                <rect width="900" height="450" fill="#e0e7ef"/>
+                                <!-- Example: Africa, Europe, Asia, Americas (very simplified shapes) -->
+                                <path d="M 200 300 Q 220 250 300 220 Q 350 200 400 250 Q 420 300 350 320 Q 250 340 200 300 Z" fill="#b6d4a3"/>
+                                <path d="M 500 180 Q 600 120 700 200 Q 750 250 650 300 Q 600 320 500 250 Q 480 200 500 180 Z" fill="#b6d4a3"/>
+                                <path d="M 100 100 Q 200 80 300 120 Q 250 180 150 160 Q 120 140 100 100 Z" fill="#b6d4a3"/>
+                                <path d="M 700 350 Q 800 340 850 400 Q 800 420 720 400 Q 700 380 700 350 Z" fill="#b6d4a3"/>
+                                <!-- Red dots for journey (example: Nigeria to Germany) -->
+                                <circle cx="270" cy="270" r="10" fill="red" stroke="#fff" stroke-width="3"/>
+                                <circle cx="600" cy="180" r="10" fill="red" stroke="#fff" stroke-width="3"/>
+                                <!-- Dashed line for journey -->
+                                <line x1="270" y1="270" x2="600" y2="180" stroke="#e11d48" stroke-width="3" stroke-dasharray="10,8" marker-end="url(#arrowhead)"/>
+                                <defs>
+                                    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                                        <polygon points="0 0, 10 3.5, 0 7" fill="#e11d48"/>
+                                    </marker>
+                                </defs>
+                                <!-- Country names -->
+                                <text x="270" y="295" font-size="18" fill="#1e293b" font-weight="bold" text-anchor="middle">Nigeria</text>
+                                <text x="600" y="165" font-size="18" fill="#1e293b" font-weight="bold" text-anchor="middle">Germany</text>
+                            </svg>
+                        </div>
+                        <div class="text-gray-600 text-sm mt-2">Red dots indicate your journey: <span class="font-semibold">Nigeria</span> (current) to <span class="font-semibold">Germany</span> (destination).</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SERVICES SECTION (original) -->
+            <section id="services" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">Mobility Services</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Relocation Support -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Relocation Support</h3>
+                            <p class="text-gray-500 text-sm text-center">End-to-end relocation management, including housing, schools, and settling-in services.</p>
+                        </div>
+                        <!-- Immigration Consulting -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-green-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Immigration Consulting</h3>
+                            <p class="text-gray-500 text-sm text-center">Visa, permit, and compliance guidance for all supported countries.</p>
+                        </div>
+                        <!-- Tax & Payroll -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-yellow-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Tax & Payroll</h3>
+                            <p class="text-gray-500 text-sm text-center">Global tax briefings, payroll setup, and compliance for mobile employees.</p>
+                        </div>
+                        <!-- Language Training -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-purple-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Language Training</h3>
+                            <p class="text-gray-500 text-sm text-center">Language and cultural training for assignees and families.</p>
+                        </div>
+                        <!-- Conversion of Diploma -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-indigo-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Conversion of Diploma</h3>
+                            <p class="text-gray-500 text-sm text-center">Assistance with recognition and conversion of foreign diplomas and qualifications.</p>
+                        </div>
+                        <!-- Emergency Support -->
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-red-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Emergency Support</h3>
+                            <p class="text-gray-500 text-sm text-center">24/7 helpline for urgent mobility and compliance issues.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Relocation Support</h3>
+                            <p class="text-gray-500 text-sm text-center">End-to-end relocation management, including housing, schools, and settling-in services.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-green-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Immigration Consulting</h3>
+                            <p class="text-gray-500 text-sm text-center">Visa, permit, and compliance guidance for all supported countries.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-yellow-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Tax & Payroll</h3>
+                            <p class="text-gray-500 text-sm text-center">Global tax briefings, payroll setup, and compliance for mobile employees.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-purple-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Language Training</h3>
+                            <p class="text-gray-500 text-sm text-center">Language and cultural training for assignees and families.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-indigo-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Conversion of Diploma</h3>
+                            <p class="text-gray-500 text-sm text-center">Assistance with recognition and conversion of foreign diplomas and qualifications.</p>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                            <svg class="w-10 h-10 text-red-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6v6H9z"/></svg>
+                            <h3 class="font-semibold text-lg mb-1">Emergency Support</h3>
+                            <p class="text-gray-500 text-sm text-center">24/7 helpline for urgent mobility and compliance issues.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- RESOURCES SECTION (original) -->
+            <section id="resources" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">Resource Library</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Country Guides</h3>
+                            <p class="text-gray-500 text-sm mb-2">Downloadable PDFs for 30+ countries.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">View Guides</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Visa Checklists</h3>
+                            <p class="text-gray-500 text-sm mb-2">Step-by-step checklists for all major visa types.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Download Checklists</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Policy Documents</h3>
+                            <p class="text-gray-500 text-sm mb-2">Company and government mobility policies.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Browse Policies</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">FAQs</h3>
+                            <p class="text-gray-500 text-sm mb-2">Answers to common mobility questions.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Read FAQs</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Templates & Forms</h3>
+                            <p class="text-gray-500 text-sm mb-2">Download forms for HR, immigration, and payroll.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Get Templates</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Webinars & Training</h3>
+                            <p class="text-gray-500 text-sm mb-2">Upcoming and recorded mobility webinars.</p>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">View Webinars</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- REPORTS SECTION (original) -->
+            <section id="reports" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">Reports & Analytics</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Assignment Overview</h3>
+                            <p class="text-gray-500 text-sm mb-2">Active: <span class="font-bold text-blue-700">12</span> | Completed: <span class="font-bold text-green-700">8</span></p>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-blue-600 h-2 rounded-full" style="width:60%"></div></div>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">View Details</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Visa Processing Times</h3>
+                            <p class="text-gray-500 text-sm mb-2">Avg: <span class="font-bold text-yellow-700">5.2 days</span></p>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-yellow-400 h-2 rounded-full" style="width:52%"></div></div>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Download Report</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Compliance Alerts</h3>
+                            <p class="text-gray-500 text-sm mb-2">Open: <span class="font-bold text-red-700">2</span></p>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-red-500 h-2 rounded-full" style="width:20%"></div></div>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">Resolve Now</a>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Cost Analysis</h3>
+                            <p class="text-gray-500 text-sm mb-2">YTD Spend: <span class="font-bold text-green-700">$120,000</span></p>
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-green-500 h-2 rounded-full" style="width:80%"></div></div>
+                            <a href="#" class="text-blue-600 hover:underline text-sm">View Breakdown</a>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- HR DASHBOARD SECTION (original) -->
+            <section id="hr-dashboard" class="hidden space-y-6">
+                <div class="card p-6">
+                    <h2 class="text-2xl font-bold text-blue-800 mb-4">HR Dashboard</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Upcoming Assignments</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li><span class="font-bold text-blue-700">Jane Miller</span> to Paris (2025-08-01)</li>
+                                <li><span class="font-bold text-blue-700">Liam Smith</span> to Tokyo (2025-09-15)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Pending Onboarding</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li><span class="font-bold text-yellow-700">Alice Smith</span> (London)</li>
+                                <li><span class="font-bold text-yellow-700">Bob Johnson</span> (New York)</li>
+                            </ul>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">Recent Feedback</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>Jane Miller: <span class="text-green-600">"Great support!"</span></li>
+                                <li>Liam Smith: <span class="text-yellow-600">"Smooth process."</span></li>
+                            </ul>
+                        </div>
+                        <div class="bg-white rounded-lg shadow p-4">
+                            <h3 class="font-semibold text-lg mb-1">HR Contacts</h3>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                <li>John Doe: <span class="text-blue-700">john.doe@company.com</span></li>
+                                <li>Mary Lee: <span class="text-blue-700">mary.lee@company.com</span></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GOVERNMENT DASHBOARD SECTION (leave as is) -->
+            <section id="gov-dashboard" class="space-y-8">
+            <h1 class="text-2xl font-bold text-blue-900 mb-6">Government Dashboard</h1>
+            <!-- 1. Real-Time Application Pipeline: Kanban Board -->
+            <div class="card p-6">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+                    <h2 class="text-xl font-semibold text-gray-700">Application Pipeline</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <select class="border rounded px-2 py-1 text-sm" aria-label="Nationality filter">
+                            <option>All Nationalities</option>
+                            <option>India</option>
+                            <option>Ukraine</option>
+                            <option>Syria</option>
+                        </select>
+                        <select class="border rounded px-2 py-1 text-sm" aria-label="Visa type filter">
+                            <option>All Visa Types</option>
+                            <option>Work</option>
+                            <option>Family</option>
+                            <option>Student</option>
+                        </select>
+                        <select class="border rounded px-2 py-1 text-sm" aria-label="Risk score filter">
+                            <option>All Risk Scores</option>
+                            <option>Low</option>
+                            <option>Medium</option>
+                            <option>High</option>
+                        </select>
+                        <select class="border rounded px-2 py-1 text-sm" aria-label="Family status filter">
+                            <option>All Family Status</option>
+                            <option>Single</option>
+                            <option>With Family</option>
+                        </select>
+                        <select class="border rounded px-2 py-1 text-sm" aria-label="Destination region filter">
+                            <option>All Regions</option>
+                            <option>Europe</option>
+                            <option>Americas</option>
+                            <option>Asia</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <div class="flex gap-4 min-w-[900px]">
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Submitted</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1001 - India - Work</div>
+                                <div class="bg-white p-2 rounded shadow text-xs">#1002 - Syria - Family</div>
+                            </div>
+                        </div>
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Under Review</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1003 - Ukraine - Student</div>
+                            </div>
+                        </div>
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Awaiting Documents</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1004 - India - Work</div>
+                            </div>
+                        </div>
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Background Checks</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1005 - Syria - Family</div>
+                            </div>
+                        </div>
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Interview Scheduled</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1006 - Ukraine - Student</div>
+                            </div>
+                        </div>
+                        <div class="w-56 bg-gray-50 rounded-lg p-3 flex-1">
+                            <h3 class="font-semibold text-gray-600 mb-2">Final Decision</h3>
+                            <div class="space-y-2">
+                                <div class="bg-white p-2 rounded shadow text-xs">#1007 - India - Work</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 2. Heat Map of Incoming Applications -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Heat Map of Incoming Applications</h2>
+                <div class="flex flex-col md:flex-row gap-6">
+                    <div class="flex-1">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/80/World_map_-_low_resolution.svg/1200px-World_map_-_low_resolution.svg.png" alt="World Heat Map" class="rounded-lg border w-full h-56 object-cover">
+                        <div class="mt-2 text-xs text-gray-500">*Mockup: Color overlays indicate application volume by country of origin and receiving region.</div>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-2">
+                        <div class="flex items-center gap-2"><span class="w-4 h-4 bg-red-500 rounded-full inline-block"></span> High Volume: India, Syria</div>
+                        <div class="flex items-center gap-2"><span class="w-4 h-4 bg-yellow-400 rounded-full inline-block"></span> Medium: Ukraine, Nigeria</div>
+                        <div class="flex items-center gap-2"><span class="w-4 h-4 bg-green-400 rounded-full inline-block"></span> Low: Norway, Canada</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 3. Alerts & Pending Tasks -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Alerts & Pending Tasks</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                        <div class="font-semibold text-yellow-700">Missing Documents</div>
+                        <div class="text-xs text-gray-600">12 applications</div>
+                    </div>
+                    <div class="bg-red-50 border-l-4 border-red-400 p-4 rounded">
+                        <div class="font-semibold text-red-700">SLA Violations</div>
+                        <div class="text-xs text-gray-600">3 cases</div>
+                    </div>
+                    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded">
+                        <div class="font-semibold text-blue-700">Supervisor Escalations</div>
+                        <div class="text-xs text-gray-600">2 escalations</div>
+                    </div>
+                    <div class="bg-pink-50 border-l-4 border-pink-400 p-4 rounded">
+                        <div class="font-semibold text-pink-700">Duplicate/Fraud Flags</div>
+                        <div class="text-xs text-gray-600">1 flagged</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 4. Policy & Compliance Insights -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Policy & Compliance Insights</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded">
+                        <div class="font-semibold text-blue-700">Legal Deadlines</div>
+                        <div class="text-xs text-gray-600">2 expiring soon</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded">
+                        <div class="font-semibold text-green-700">Monthly Intake Quota</div>
+                        <div class="text-xs text-gray-600">78% used</div>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded">
+                        <div class="font-semibold text-yellow-700">Visa Risk Scoring (AI)</div>
+                        <div class="text-xs text-gray-600">5 high risk</div>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded">
+                        <div class="font-semibold text-purple-700">Automation Rate</div>
+                        <div class="text-xs text-gray-600">62% handled by AI</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 5. Applicant Demographics Visualization -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Applicant Demographics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center text-2xl font-bold text-blue-700">32</div>
+                        <div class="text-xs mt-2">Avg. Age</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-pink-100 rounded-full flex items-center justify-center text-2xl font-bold text-pink-700">F: 54%</div>
+                        <div class="text-xs mt-2">Female</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-2xl font-bold text-green-700">M: 46%</div>
+                        <div class="text-xs mt-2">Male</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center text-2xl font-bold text-yellow-700">28%</div>
+                        <div class="text-xs mt-2">With Dependents</div>
+                    </div>
+                    <div class="flex flex-col items-center">
+                        <div class="w-20 h-20 bg-purple-100 rounded-full flex items-center justify-center text-2xl font-bold text-purple-700">12%</div>
+                        <div class="text-xs mt-2">Family Reunification</div>
+                    </div>
+                </div>
+            </div>
+            <!-- 6. Performance Metrics by Officer/Region -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Performance Metrics</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs text-left">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-1">Officer/Region</th>
+                                <th class="px-2 py-1">Applications</th>
+                                <th class="px-2 py-1">Avg. Processing Time</th>
+                                <th class="px-2 py-1">Escalation Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="bg-white">
+                                <td class="px-2 py-1">Officer A (Europe)</td>
+                                <td class="px-2 py-1">34</td>
+                                <td class="px-2 py-1">5.2d</td>
+                                <td class="px-2 py-1">2%</td>
+                            </tr>
+                            <tr class="bg-gray-50">
+                                <td class="px-2 py-1">Officer B (Asia)</td>
+                                <td class="px-2 py-1">28</td>
+                                <td class="px-2 py-1">6.1d</td>
+                                <td class="px-2 py-1">4%</td>
+                            </tr>
+                            <tr class="bg-white">
+                                <td class="px-2 py-1">Officer C (Americas)</td>
+                                <td class="px-2 py-1">19</td>
+                                <td class="px-2 py-1">4.8d</td>
+                                <td class="px-2 py-1">1%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- 7. Document Analysis Insights (OCR-AI) -->
+            <div class="card p-6">
+                <h2 class="text-xl font-semibold text-gray-700 mb-4">Document Analysis Insights (OCR-AI)</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-blue-50 p-4 rounded">
+                        <div class="font-semibold text-blue-700 mb-1">Chatbot Summary</div>
+                        <div class="text-xs text-gray-600">Applicant #1001: "All documents received. Ready for review."</div>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded">
+                        <div class="font-semibold text-green-700 mb-1">Timeline of Events</div>
+                        <ul class="text-xs text-gray-600 list-disc ml-4">
+                            <li>Submitted: 2025-06-10</li>
+                            <li>Docs Received: 2025-06-12</li>
+                            <li>Background Check: 2025-06-15</li>
+                        </ul>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded">
+                        <div class="font-semibold text-purple-700 mb-1">Bulk AI Recommendations</div>
+                        <div class="text-xs text-gray-600">Approve: 3 | Escalate: 1 | Request Info: 2</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- END GOVERNMENT DASHBOARD SECTION -->
+        
+        <!-- SERVICES SECTION -->
+        <section id="services-content" class="hidden space-y-6">
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">Mobility Services Catalog</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Area Orientation at destination -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-blue-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Area Orientation</h3>
+                        <p class="text-gray-500 text-sm text-center">Guided introduction to your new destination.</p>
+                    </div>
+                    <!-- Banking Services -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-green-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Banking Services</h3>
+                        <p class="text-gray-500 text-sm text-center">Assistance with opening and managing bank accounts.</p>
+                    </div>
+                    <!-- Home Search -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-yellow-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-11z"/><polyline points="9 22 9 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Home Search</h3>
+                        <p class="text-gray-500 text-sm text-center">Find suitable housing in your new location.</p>
+                    </div>
+                    <!-- Host Country Transportation systems -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-purple-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 17v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Transportation Systems</h3>
+                        <p class="text-gray-500 text-sm text-center">Guidance on public and private transport options.</p>
+                    </div>
+                    <!-- Insurance Services -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-pink-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l7 5v6c0 5.25-3.5 10-7 10s-7-4.75-7-10V7z"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Insurance Services</h3>
+                        <p class="text-gray-500 text-sm text-center">Health, property, and travel insurance support.</p>
+                    </div>
+                    <!-- Intercultural Training -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-indigo-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Intercultural Training</h3>
+                        <p class="text-gray-500 text-sm text-center">Workshops for cultural adaptation and success.</p>
+                    </div>
+                    <!-- Language Training -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-blue-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Language Training</h3>
+                        <p class="text-gray-500 text-sm text-center">Language and communication skills for all ages.</p>
+                    </div>
+                    <!-- Mortgage Assistance -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-green-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Mortgage Assistance</h3>
+                        <p class="text-gray-500 text-sm text-center">Help with home financing and mortgages.</p>
+                    </div>
+                    <!-- One-way/Permanent Transfer -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-orange-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Permanent Transfer</h3>
+                        <p class="text-gray-500 text-sm text-center">Support for one-way or permanent relocations.</p>
+                    </div>
+                    <!-- Ongoing Assignment Services -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-blue-700 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Ongoing Assignment</h3>
+                        <p class="text-gray-500 text-sm text-center">Continuous support throughout your assignment.</p>
+                    </div>
+                    <!-- Rental/Leasing Assistance -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-yellow-600 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Rental/Leasing</h3>
+                        <p class="text-gray-500 text-sm text-center">Help with finding and leasing rental properties.</p>
+                    </div>
+                    <!-- Repatriation Services -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-red-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Repatriation</h3>
+                        <p class="text-gray-500 text-sm text-center">Support for returning to your home country.</p>
+                    </div>
+                    <!-- Settling-in Programs -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-green-600 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Settling-in Programs</h3>
+                        <p class="text-gray-500 text-sm text-center">Help with daily life and local integration.</p>
+                    </div>
+                    <!-- Specialized Education Assistance -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-purple-400 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 3v4"/><path d="M8 3v4"/><path d="M2 13h20"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Education Assistance</h3>
+                        <p class="text-gray-500 text-sm text-center">Guidance for school and special education needs.</p>
+                    </div>
+                    <!-- Spouse/Partner Career Assistance -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-pink-400 mb-2" fill="none" currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 15s1.5-2 4-2 4 2 4 2"/><path d="M9 9h.01"/><path d="M15 9h.01"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Spouse/Partner Career</h3>
+                        <p class="text-gray-500 text-sm text-center">Career support for accompanying partners.</p>
+                    </div>
+                    <!-- Tenancy Management -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-gray-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Tenancy Management</h3>
+                        <p class="text-gray-500 text-sm text-center">Lease management and landlord liaison.</p>
+                    <!-- Diploma Conversion -->
+                    <div class="bg-white rounded-lg shadow p-4 flex flex-col items-center">
+                        <svg class="w-10 h-10 text-yellow-500 mb-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect cx="5" cy="8" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <h3 class="font-semibold text-lg mb-1">Diploma Conversion</h3>
+                        <p class="text-gray-500 text-sm text-center">Find information regarding your diploma.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- RESOURCES SECTION -->
+        <section id="resources-content" class="hidden space-y-6">
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">Resource Library</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Country Guides</h3>
+                        <p class="text-gray-500 text-sm mb-2">Downloadable PDFs for 30+ countries.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">View Guides</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Visa Checklists</h3>
+                        <p class="text-gray-500 text-sm mb-2">Step-by-step checklists for all major visa types.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Download Checklists</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Policy Documents</h3>
+                        <p class="text-gray-500 text-sm mb-2">Company and government mobility policies.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Browse Policies</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">FAQs</h3>
+                        <p class="text-gray-500 text-sm mb-2">Answers to common mobility questions.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Read FAQs</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Templates & Forms</h3>
+                        <p class="text-gray-500 text-sm mb-2">Download forms for HR, immigration, and payroll.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Get Templates</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Webinars & Training</h3>
+                        <p class="text-gray-500 text-sm mb-2">Upcoming and recorded mobility webinars.</p>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">View Webinars</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- REPORTS SECTION -->
+        <section id="reports-content" class="hidden space-y-6">
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">Reports & Analytics</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Assignment Overview</h3>
+                        <p class="text-gray-500 text-sm mb-2">Active: <span class="font-bold text-blue-700">12</span> | Completed: <span class="font-bold text-green-700">8</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-blue-600 h-2 rounded-full" style="width:60%"></div></div>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">View Details</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Visa Processing Times</h3>
+                        <p class="text-gray-500 text-sm mb-2">Avg: <span class="font-bold text-yellow-700">5.2 days</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-yellow-400 h-2 rounded-full" style="width:52%"></div></div>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Download Report</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Compliance Alerts</h3>
+                        <p class="text-gray-500 text-sm mb-2">Open: <span class="font-bold text-red-700">2</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-red-500 h-2 rounded-full" style="width:20%"></div></div>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">Resolve Now</a>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Cost Analysis</h3>
+                        <p class="text-gray-500 text-sm mb-2">YTD Spend: <span class="font-bold text-green-700">$120,000</span></p>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mb-2"><div class="bg-green-500 h-2 rounded-full" style="width:80%"></div></div>
+                        <a href="#" class="text-blue-600 hover:underline text-sm">View Breakdown</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- HR DASHBOARD SECTION -->
+        <section id="hr-dashboard-content" class="hidden space-y-6">
+            <div class="card p-6">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4">HR Dashboard</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Upcoming Assignments</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><span class="font-bold text-blue-700">Jane Miller</span> to Paris (2025-08-01)</li>
+                            <li><span class="font-bold text-blue-700">Liam Smith</span> to Tokyo (2025-09-15)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Pending Onboarding</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li><span class="font-bold text-yellow-700">Alice Smith</span> (London)</li>
+                            <li><span class="font-bold text-yellow-700">Bob Johnson</span> (New York)</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">Recent Feedback</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>Jane Miller: <span class="text-green-600">"Great support!"</span></li>
+                            <li>Liam Smith: <span class="text-yellow-600">"Smooth process."</span></li>
+                        </ul>
+                    </div>
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h3 class="font-semibold text-lg mb-1">HR Contacts</h3>
+                        <ul class="text-sm text-gray-600 space-y-1">
+                            <li>John Doe: <span class="text-blue-700">john.doe@company.com</span></li>
+                            <li>Mary Lee: <span class="text-blue-700">mary.lee@company.com</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <!-- WELCOME SECTION -->
+        <section id="welcome-content" class="hidden space-y-6">
+            <div class="card p-6 text-center">
+                <h2 class="text-3xl font-bold text-blue-800 mb-2">Welcome to MobilityHub!</h2>
+                <p class="text-gray-600 mb-4">Your one-stop portal for global mobility, assignments, and compliance. Use the sidebar to navigate through the portal features.</p>
+                <img src="https://placehold.co/400x180/3B82F6/FFFFFF?text=Welcome+to+MobilityHub" alt="Welcome Banner" class="mx-auto rounded-lg shadow mb-4">
+                <div class="flex justify-center gap-4 mt-4">
+                    <a href="#" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg">Get Started</a>
+                    <a href="#" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-6 rounded-lg">Learn More</a>
+                </div>
+            </div>
+        </section>
+        <!-- LOGIN SECTION -->
+        <section id="login-content" class="hidden space-y-6">
+            <div class="card p-6 max-w-md mx-auto">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4 text-center">Login to MobilityHub</h2>
+                <form id="login-form" class="space-y-4">
+                    <div>
+                        <label for="login-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="login-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="you@example.com">
+                        <span id="login-email-error" class="text-red-600 text-xs hidden">Invalid email address.</span>
+                    </div>
+                    <div>
+                        <label for="login-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="login-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="••••••••">
+                        <span id="login-password-error" class="text-red-600 text-xs hidden">Password is required.</span>
+                    </div>
+                    <span id="login-error" class="text-red-600 text-xs hidden">Incorrect email or password.</span>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Login</button>
+                </form>
+                <div class="text-center mt-4">
+                    <a href="#" class="text-blue-600 hover:underline text-sm">Forgot password?</a>
+                </div>
+            </div>
+        </section>
+        <!-- REGISTER SECTION -->
+        <section id="register-content" class="hidden space-y-6">
+            <div class="card p-6 max-w-md mx-auto">
+                <h2 class="text-2xl font-bold text-blue-800 mb-4 text-center">Register for MobilityHub</h2>
+                <form id="register-form" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="register-firstName" class="block text-sm font-medium text-gray-700">First Name</label>
+                            <input type="text" id="register-firstName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Jane">
+                        </div>
+                        <div>
+                            <label for="register-lastName" class="block text-sm font-medium text-gray-700">Last Name</label>
+                            <input type="text" id="register-lastName" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="Doe">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="register-email" class="block text-sm font-medium text-gray-700">Email</label>
+                        <input type="email" id="register-email" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="you@example.com">
+                    </div>
+                    <div>
+                        <label for="register-role" class="block text-sm font-medium text-gray-700">Role</label>
+                        <select id="register-role" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                            <option value="">Select a role</option>
+                            <option value="employee">Employee</option>
+                            <option value="hr">HR</option>
+                            <option value="government">Government</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="register-password" class="block text-sm font-medium text-gray-700">Password</label>
+                        <input type="password" id="register-password" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="••••••••">
+                    </div>
+                    <div>
+                        <label for="register-confirm" class="block text-sm font-medium text-gray-700">Confirm Password</label>
+                        <input type="password" id="register-confirm" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="••••••••">
+                    </div>
+                    <span id="register-error" class="text-red-600 text-xs hidden"></span>
+                    <span id="register-success" class="text-green-600 text-xs hidden"></span>
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Register</button>
+                </form>
+                <div class="text-center mt-4">
+                    <span class="text-gray-600 text-sm">Already have an account?</span>
+                    <a href="#" class="text-blue-600 hover:underline text-sm ml-1">Login</a>
+                </div>
+            </div>
+        </section>
+        <!-- END RECONSTRUCTED SECTIONS -->
+        
+        <div id="chatbotToggleButton" class="chatbot-toggle-button" title="Open Mobility Assistant">
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20h9"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+        </div>
+        <div id="chatbotContainer" class="chatbot-container">
+            <div class="chatbot-header">
+                Mobility Assistant
+                <button id="closeChatbot" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;">&times;</button>
+            </div>
+            <div id="chatbotBody" class="chatbot-body"></div>
+            <form id="chatbotForm" class="chatbot-footer">
+                <input id="chatbotInput" type="text" placeholder="Type your question..." autocomplete="off" />
+                <button type="submit">Send</button>
+            </form>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const chatbotContainer = document.getElementById('chatbotContainer');
+                const chatbotToggleButton = document.getElementById('chatbotToggleButton');
+                let chatbotOpen = false;
+                function toggleChatbot() {
+                    chatbotOpen = !chatbotOpen;
+                    chatbotContainer.classList.toggle('open', chatbotOpen);
+                    chatbotToggleButton.classList.toggle('hidden', chatbotOpen);
+                    if (chatbotOpen) {
+                        setTimeout(() => {
+                            appendMessage('Hello! How can I assist you with your mobility needs today?', 'bot');
+                        }, 300);
+                    }
+                }
+                chatbotToggleButton.addEventListener('click', toggleChatbot);
+                const closeButton = document.getElementById('closeChatbot');
+                if (closeButton) {
+                    closeButton.addEventListener('click', () => {
+                        chatbotContainer.classList.remove('open');
+                        chatbotToggleButton.classList.remove('hidden');
+                        chatbotOpen = false;
+                    });
+                }
+                const chatbotBody = document.getElementById('chatbotBody');
+                const chatbotForm = document.getElementById('chatbotForm');
+                const chatbotInput = document.getElementById('chatbotInput');
+                function appendMessage(text, sender = 'bot') {
+                    const msg = document.createElement('div');
+                    msg.className = 'chat-message ' + (sender === 'user' ? 'user-message' : 'bot-message');
+                    msg.textContent = text;
+                    chatbotBody.appendChild(msg);
+                    chatbotBody.scrollTop = chatbotBody.scrollHeight;
+                }
+                function showTyping() {
+                    const typing = document.createElement('div');
+                    typing.className = 'chat-message bot-message typing-indicator';
+                    typing.innerHTML = '<span></span><span></span><span></span>';
+                    chatbotBody.appendChild(typing);
+                    chatbotBody.scrollTop = chatbotBody.scrollHeight;
+                    return typing;
+                }
+                // --- OpenAI direct call (frontend, not secure for production) ---
+                async function callOpenAI(prompt) {
+                    const apiKey = 'YOUR_OPENAI_API_KEY'; // <-- Replace with your OpenAI API key for demo/testing
+                    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Authorization": "Bearer " + apiKey
+                        },
+                        body: JSON.stringify({
+                            model: "gpt-3.5-turbo",
+                            messages: [
+                                { role: "system", content: "You are a helpful assistant for global mobility and HR portal users." },
+                                { role: "user", content: prompt }
+                            ]
+                        })
+                    });
+                    const data = await response.json();
+                    if (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) {
+                        return data.choices[0].message.content;
+                    } else if (data.error && data.error.message) {
+                        return `<span style='color:red'>OpenAI error: ${data.error.message}</span>`;
+                    } else {
+                        return "<span style='color:red'>No valid response from OpenAI. Check console for details.</span>";
+                    }
+                }
+                chatbotForm.onsubmit = async function(e) {
+                    e.preventDefault();
+                    const userMsg = chatbotInput.value.trim();
+                    if (!userMsg) return;
+                    appendMessage(userMsg, 'user');
+                    chatbotInput.value = '';
+                    const typing = showTyping();
+                    try {
+                        const reply = await callOpenAI(userMsg);
+                        typing.remove();
+                        appendMessage(reply, 'bot');
+                    } catch (err) {
+                        typing.remove();
+                        appendMessage('Error contacting assistant. Please try again later.', 'bot');
+                    }
+                };
+                // --- Sidebar Navigation Logic ---
+                const sidebarLinks = document.querySelectorAll('.sidebar-link');
+                const sectionTitle = document.querySelector('.current-section-title');
+                const contentSections = {
+                    'dashboard-content': document.getElementById('dashboard-content'),
+                    'my-assignments-content': document.getElementById('my-assignments-content'),
+                    'visa-application': document.getElementById('visa-application'),
+                    'services-content': document.getElementById('services-content'),
+                    'resources-content': document.getElementById('resources-content'),
+                    'reports-content': document.getElementById('reports-content'),
+                    'hr-dashboard-content': document.getElementById('hr-dashboard-content'),
+                    'gov-dashboard': document.getElementById('gov-dashboard'),
+                    'welcome-content': document.getElementById('welcome-content'),
+                    'login-content': document.getElementById('login-content'),
+                    'register-content': document.getElementById('register-content')
+                };
+                function showSection(sectionId) {
+                    for (const key in contentSections) {
+                        if (contentSections[key]) {
+                            contentSections[key].classList.toggle('hidden', key !== sectionId);
+                        }
+                    }
+                }
+                sidebarLinks.forEach(link => {
+                    link.addEventListener('click', function (event) {
+                        event.preventDefault();
+                        const section = this.getAttribute('data-section');
+                        // Map data-section to section id
+                        let sectionId = section + '-content';
+                        if (section === 'dashboard') sectionId = 'dashboard-content';
+                        if (section === 'my-assignments') sectionId = 'my-assignments-content';
+                        if (section === 'visa-application') sectionId = 'visa-application';
+                        if (section === 'services') sectionId = 'services-content';
+                        if (section === 'resources') sectionId = 'resources-content';
+                        if (section === 'reports') sectionId = 'reports-content';
+                        if (section === 'hr-dashboard') sectionId = 'hr-dashboard-content';
+                        if (section === 'gov-dashboard') sectionId = 'gov-dashboard';
+                        if (section === 'welcome') sectionId = 'welcome-content';
+                        if (section === 'login') sectionId = 'login-content';
+                        if (section === 'register') sectionId = 'register-content';
+                        sidebarLinks.forEach(l => l.classList.remove('sidebar-link-active'));
+                        this.classList.add('sidebar-link-active');
+                        if (sectionTitle && this.querySelector('.link-text')) {
+                            sectionTitle.textContent = this.querySelector('.link-text').textContent;
+                        }
+                        showSection(sectionId);
+                    });
+                });
+                // Show dashboard by default
+                showSection('dashboard-content');
+            });
+        </script>
+        <script>
+    document.getElementById('extract-passport-btn').onclick = async function () {
+        var fileInput = document.getElementById('passport-upload');
+        var status = document.getElementById('passport-extract-status');
+        var form = document.getElementById('visa-form');
+        if (!fileInput.files.length) {
+            status.textContent = 'Select a file first.';
+            status.style.color = 'red';
+            return;
+        }
+        var formData = new FormData();
+        formData.append('passport', fileInput.files[0]);
+        status.textContent = 'Uploading...';
+        status.style.color = '#666';
+        try {
+            var res = await fetch('http://localhost:3000/api/visa/upload-passport', {
+                method: 'POST',
+                body: formData
+            });
+            var data = await res.json();
+            if (data.success && data.fields) {
+                if (data.fields.fullName) form.elements['fullName'].value = data.fields.fullName;
+                if (data.fields.nationality) form.elements['nationality'].value = data.fields.nationality;
+                if (data.fields.passportNumber) form.elements['passportNumber'].value = data.fields.passportNumber;
+                if (data.fields.dob) form.elements['dob'].value = data.fields.dob;
+                status.textContent = 'Extraction successful!';
+                status.style.color = 'green';
+            } else {
+                status.textContent = 'Extraction failed.';
+                status.style.color = 'red';
+            }
+        } catch (e) {
+            status.textContent = 'Error: ' + e.message;
+            status.style.color = 'red';
+        }
+    };
+    </script>
+</body>
+</html>
